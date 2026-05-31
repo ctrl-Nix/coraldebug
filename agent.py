@@ -1,10 +1,9 @@
 ﻿import subprocess
-import json
-import re
+import os
 from groq import Groq
 
 # ---- CONFIG ----
-GROQ_API_KEY = "YOUR_GROQ_KEY_HERE"  # paste your gsk_ key here tomorrow
+GROQ_API_KEY = input("🔑 Enter your Groq API key: ")
 
 client = Groq(api_key=GROQ_API_KEY)
 
@@ -44,7 +43,7 @@ SLACK CHANNELS:
 Give a clear, actionable diagnosis for each error.
 """
     response = client.chat.completions.create(
-        model="llama3-70b-8192",
+        model="llama-3.3-70b-versatile",
         messages=[{"role": "user", "content": prompt}],
         max_tokens=1500
     )
@@ -65,8 +64,6 @@ def main():
     print("=" * 60)
     print(diagnosis)
     print("=" * 60)
-    
-    # Save report
     with open("report.txt", "w") as f:
         f.write("CORALDEBUG REPORT\n")
         f.write("=" * 60 + "\n")
@@ -74,7 +71,6 @@ def main():
         f.write("GITHUB DATA:\n" + github + "\n")
         f.write("SLACK DATA:\n" + slack + "\n")
         f.write("AI DIAGNOSIS:\n" + diagnosis + "\n")
-    
     print("\nReport saved to report.txt")
 
 if __name__ == "__main__":
