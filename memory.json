@@ -1,0 +1,6 @@
+{
+  "Exception: [DatabaseError] Connection timeout after 30s in db/connection.py": {
+    "patch": "def get_connection():\n-    pool_timeout = 30\n+    pool_timeout = 60\n+    max_retries = 3",
+    "reasoning": "Database timeout occurs under heavy load. Increased pool timeout and added retries based on previous successful incident resolution."
+  }
+}

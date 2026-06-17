@@ -202,6 +202,17 @@ class FixAgent:
     )
 
     def propose(self, diagnosis: Diagnosis) -> FixSuggestion:
+        # Check Agentic Memory first
+        if diagnosis.error_title in self.memory:
+            cached = self.memory[diagnosis.error_title]
+            print(f"      [Memory] Recalled past successful fix for {diagnosis.error_title}")
+            return FixSuggestion(
+                error_title=diagnosis.error_title,
+                suggested_fix=cached.get("patch", "Apply previous hotfix"),
+                confidence=0.99,
+                reasoning=cached.get("reasoning", "RAG Memory hit.")
+            )
+
         response = client.chat.completions.create(
             model=MODEL,
             messages=[
