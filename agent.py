@@ -78,6 +78,13 @@ class TriageResult:
     action: str
 
 
+@dataclass
+class ActionResult:
+    error_title: str
+    action_taken: str
+    payload: str
+
+
 # ---------------------------------------------------------------------------
 # Agent 1: Retriever — owns all I/O with external sources
 # ---------------------------------------------------------------------------
@@ -281,6 +288,45 @@ class TriageAgent:
 
 
 # ---------------------------------------------------------------------------
+# Agent 5: Action — Closing the Loop autonomously
+# ---------------------------------------------------------------------------
+
+class ActionAgent:
+    """Executes conditional business logic to auto-fix or alert."""
+
+    def execute(self, triage: TriageResult, fix: FixSuggestion) -> ActionResult:
+        if triage.priority_rank <= 2 and fix.confidence >= 0.85:
+            # Auto-remediation scenario
+            patch_content = (
+                f"diff --git a/project/src/file.py b/project/src/file.py\n"
+                f"--- a/project/src/file.py\n"
+                f"+++ b/project/src/file.py\n"
+                f"@@ -1,1 +1,1 @@\n"
+                f"- # Broken code\n"
+                f"+ {fix.suggested_fix}\n"
+            )
+            return ActionResult(
+                error_title=triage.error_title,
+                action_taken="GENERATED_PATCH",
+                payload=patch_content
+            )
+        else:
+            # Human review required scenario
+            slack_alert = (
+                f"*URGENT TRIAGE REQUIRED: {triage.error_title}*\n"
+                f"Priority: {triage.priority_rank} (Score: {triage.urgency_score})\n"
+                f"Proposed Fix Confidence: {fix.confidence}\n"
+                f"Fix: `{fix.suggested_fix}`\n"
+                f"_Please review before deploying._"
+            )
+            return ActionResult(
+                error_title=triage.error_title,
+                action_taken="SLACK_ALERT_PREPARED",
+                payload=slack_alert
+            )
+
+
+# ---------------------------------------------------------------------------
 # Business Logic: ROI & Token Economics
 # ---------------------------------------------------------------------------
 
@@ -325,6 +371,7 @@ def run_pipeline() -> None:
     diagnoser = DiagnosisAgent()
     fixer = FixAgent()
     triager = TriageAgent()
+    actioner = ActionAgent()
 
     print("[RetrieverAgent] Pulling Sentry + GitHub + Slack data...")
     telemetry = retriever.fetch()
@@ -337,6 +384,15 @@ def run_pipeline() -> None:
 
     print("[TriageAgent] Ranking issues by urgency...")
     triage_results = triager.rank(diagnoses, fixes)
+
+    print("[ActionAgent] Executing business logic based on triage + confidence...")
+    # Map fixes by title to easily pair them with triage results
+    fixes_map = {f.error_title: f for f in fixes}
+    action_results = []
+    for t in triage_results:
+        f = fixes_map.get(t.error_title)
+        if f:
+            action_results.append(actioner.execute(t, f))
 
     print("=" * 60)
     print("CORALDEBUG MULTI-AGENT REPORT")
@@ -376,18 +432,28 @@ def run_pipeline() -> None:
     print(roi_block)
     report_lines.append(roi_block)
 
+    if action_results:
+        action_block = "\n" + "=" * 60 + "\nAUTONOMOUS ACTIONS\n" + "=" * 60 + "\n"
+        print(action_block)
+        report_lines.append(action_block)
+        for a in action_results:
+            line = f"[{a.action_taken}] {a.error_title}\nPayload:\n{a.payload}\n"
+            print(line)
+            report_lines.append(line)
+
     _HERE = pathlib.Path(__file__).parent
     report_path = _HERE / "report.txt"
     with open(report_path, "w") as out:
         out.write("\n".join(report_lines))
 
     json_report = {
-        "pipeline_version": "2.0",
-        "agents": ["RetrieverAgent", "DiagnosisAgent", "FixAgent", "TriageAgent"],
+        "pipeline_version": "3.0-enterprise",
+        "agents": ["RetrieverAgent", "DiagnosisAgent", "FixAgent", "TriageAgent", "ActionAgent"],
         "roi_analysis": roi_data,
         "diagnoses": [d.__dict__ for d in diagnoses],
         "fixes": [f.__dict__ for f in fixes],
-        "triage": [t.__dict__ for t in triage_results]
+        "triage": [t.__dict__ for t in triage_results],
+        "actions": [a.__dict__ for a in action_results]
     }
     json_path = _HERE / "report.json"
     with open(json_path, "w") as out:
