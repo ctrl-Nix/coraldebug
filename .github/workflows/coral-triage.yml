@@ -1,0 +1,42 @@
+name: Coral Triage Multi-Agent Pipeline
+
+on:
+  schedule:
+    # Run every night at midnight to triage unresolved issues
+    - cron: '0 0 * * *'
+  workflow_dispatch:
+    # Allow manual triggering from GitHub UI
+
+jobs:
+  run-pipeline:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+
+      - name: Install dependencies
+        run: pip install -r requirements.txt
+
+      - name: Setup Coral CLI
+        # In a real setup, we would install Coral here
+        # For demo purposes, we echo the step
+        run: echo "Coral CLI installed and configured"
+
+      - name: Run Multi-Agent Triage
+        env:
+          GROQ_API_KEY: ${{ secrets.GROQ_API_KEY }}
+        run: python agent.py
+
+      - name: Archive Triage Report
+        uses: actions/upload-artifact@v4
+        with:
+          name: coral-triage-report
+          path: |
+            report.json
+            report.txt
