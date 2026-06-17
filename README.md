@@ -1,19 +1,19 @@
-# 🏴‍☠️ CoralDebug Agent
+# CoralDebug Agent
 
 > A multi-agent debugging pipeline across GitHub + Sentry + Slack — powered by Coral SQL
 
 Built for the **Pirates of the Coral-bean Hackathon 2026** by WeMakeDevs × Coral, and recently upgraded to a full production-ready multi-agent architecture.
 
-## 🎯 What it does
+## What it does
 
 CoralDebug diagnoses production errors by querying GitHub, Sentry, and Slack **using Coral SQL**, and orchestrates an AI pipeline to find the root cause, suggest a fix, and triage the issues by urgency.
 
 Instead of hopping between 3 dashboards, the agent automatically pulls:
-- 🔴 **Sentry** → unresolved errors in production
-- 🐙 **GitHub** → affected repositories and languages
-- 💬 **Slack** → what the team is saying about it
+- **Sentry** -> unresolved errors in production
+- **GitHub** -> affected repositories and languages
+- **Slack** -> what the team is saying about it
 
-## 🤖 Multi-Agent Architecture
+## Multi-Agent Architecture
 
 Unlike typical single-prompt AI tools, CoralDebug uses a genuine multi-agent handoff system. This prevents context pollution, allows independent testing of stages, and provides structured data at each step.
 
@@ -35,7 +35,7 @@ A single mega-prompt suffers from attention degradation and makes it impossible 
 3. **FixAgent** focuses *only* on generating concrete code fixes with confidence scores.
 4. **TriageAgent** acts as a cross-agent composer, weighing the severity of the diagnosis against the confidence of the fix to rank issues for engineers.
 
-## 🪸 Powered by Coral
+## Powered by Coral
 
 The RetrieverAgent fetches live telemetry across 3 sources natively:
 
@@ -46,18 +46,18 @@ SELECT id, name FROM slack.channels LIMIT 5
 ```
 *(Note: Current pipeline queries Sentry issues, GitHub repos, and Slack channels based on current schema availability).*
 
-## 🚀 Live Demo
+## Live Demo
 
-👉 **https://coraldebug.vercel.app/**
+**https://coraldebug.vercel.app/**
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **[Coral](https://withcoral.com)** — Cross-source SQL layer
 - **Groq (Llama3-70b)** — AI reasoning engine
 - **Python** — Multi-agent orchestration
 - **Vercel** — Dashboard deployment
 
-## ⚡ Quick Start
+## Quick Start
 
 ### 1. Install Coral
 ```bash
@@ -97,7 +97,7 @@ This generates two files:
 ### 6. Open the dashboard
 Open `index.html` in your browser or visit the live demo.
 
-## 🏴‍☠️ Hackathon
+## Hackathon
 
 Built during **Pirates of the Coral-bean** — May 2026
 - Organized by [WeMakeDevs](https://wemakedevs.org)
