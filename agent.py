@@ -32,11 +32,18 @@ if not GROQ_API_KEY:
     )
 
 client = Groq(api_key=GROQ_API_KEY)
-MODEL = "llama-3.3-70b-versatile"
+MODEL = "llama3-70b-8192"
 
+# Global token tracking for ROI calculation
+TOKEN_USAGE = {"prompt_tokens": 0, "completion_tokens": 0}
+
+def update_usage(usage):
+    if usage:
+        TOKEN_USAGE["prompt_tokens"] += getattr(usage, "prompt_tokens", 0)
+        TOKEN_USAGE["completion_tokens"] += getattr(usage, "completion_tokens", 0)
 
 # ---------------------------------------------------------------------------
-# Shared data contracts between agents
+# Dataclasses for structured handoffs
 # ---------------------------------------------------------------------------
 
 @dataclass
@@ -125,19 +132,20 @@ class DiagnosisAgent:
     )
 
     def diagnose(self, telemetry: RawTelemetry) -> list[Diagnosis]:
-        user_prompt = (
-            f"SENTRY ERRORS:\n{telemetry.sentry}\n\n"
-            f"GITHUB REPOS:\n{telemetry.github}\n\n"
-            f"SLACK CHANNELS:\n{telemetry.slack}\n"
-        )
+        raw_data = {
+            "sentry": telemetry.sentry,
+            "github": telemetry.github,
+            "slack": telemetry.slack
+        }
         response = client.chat.completions.create(
             model=MODEL,
             messages=[
                 {"role": "system", "content": self.SYSTEM_PROMPT},
-                {"role": "user", "content": user_prompt},
+                {"role": "user", "content": json.dumps(raw_data)},
             ],
             max_tokens=1200,
         )
+        update_usage(response.usage)
         content = response.choices[0].message.content
         return self._parse(content)
 
@@ -187,20 +195,15 @@ class FixAgent:
     )
 
     def propose(self, diagnosis: Diagnosis) -> FixSuggestion:
-        user_prompt = (
-            f"Error: {diagnosis.error_title}\n"
-            f"Root cause: {diagnosis.root_cause}\n"
-            f"Affected repo: {diagnosis.affected_repo}\n"
-            f"Severity: {diagnosis.severity}\n"
-        )
         response = client.chat.completions.create(
             model=MODEL,
             messages=[
                 {"role": "system", "content": self.SYSTEM_PROMPT},
-                {"role": "user", "content": user_prompt},
+                {"role": "user", "content": json.dumps(diagnosis.__dict__)},
             ],
-            max_tokens=500,
+            max_tokens=800,
         )
+        update_usage(response.usage)
         content = response.choices[0].message.content
         return self._parse(diagnosis.error_title, content)
 
@@ -255,6 +258,7 @@ class TriageAgent:
             ],
             max_tokens=800,
         )
+        update_usage(response.usage)
         content = response.choices[0].message.content
         return self._parse(content)
 
@@ -277,7 +281,41 @@ class TriageAgent:
 
 
 # ---------------------------------------------------------------------------
-# Pipeline orchestration — wires the three agents together
+# Business Logic: ROI & Token Economics
+# ---------------------------------------------------------------------------
+
+class CostAnalyzer:
+    """Calculates the business value of the autonomous triage run."""
+    
+    # Llama-3-70b prices per 1M tokens (approximate Groq pricing)
+    PRICE_PER_M_PROMPT = 0.59
+    PRICE_PER_M_COMPLETION = 0.79
+    
+    # Assume a human takes 30 mins per issue to reproduce, diagnose, and propose a fix
+    HOURS_SAVED_PER_ISSUE = 0.5
+    AVG_ENGINEER_HOURLY_RATE = 150.0
+
+    @classmethod
+    def calculate_roi(cls, num_issues: int) -> dict:
+        p_tokens = TOKEN_USAGE["prompt_tokens"]
+        c_tokens = TOKEN_USAGE["completion_tokens"]
+        
+        cost = (p_tokens / 1_000_000 * cls.PRICE_PER_M_PROMPT) + \
+               (c_tokens / 1_000_000 * cls.PRICE_PER_M_COMPLETION)
+               
+        hours_saved = num_issues * cls.HOURS_SAVED_PER_ISSUE
+        money_saved = hours_saved * cls.AVG_ENGINEER_HOURLY_RATE
+        
+        return {
+            "api_cost_usd": round(cost, 6),
+            "human_hours_saved": hours_saved,
+            "human_cost_saved_usd": money_saved,
+            "net_roi_usd": round(money_saved - cost, 2),
+            "tokens": TOKEN_USAGE
+        }
+
+# ---------------------------------------------------------------------------
+# Pipeline orchestration — wires the agents together
 # ---------------------------------------------------------------------------
 
 def run_pipeline() -> None:
@@ -327,6 +365,17 @@ def run_pipeline() -> None:
             print(line)
             report_lines.append(line)
 
+    roi_data = CostAnalyzer.calculate_roi(len(diagnoses))
+    roi_block = (
+        f"\n" + "=" * 60 +
+        f"\nBUSINESS ROI & ECONOMICS\n" + "=" * 60 + "\n"
+        f"API Cost: ${roi_data['api_cost_usd']}\n"
+        f"Engineering Hours Saved: {roi_data['human_hours_saved']} hours\n"
+        f"Estimated Savings: ${roi_data['net_roi_usd']}\n"
+    )
+    print(roi_block)
+    report_lines.append(roi_block)
+
     _HERE = pathlib.Path(__file__).parent
     report_path = _HERE / "report.txt"
     with open(report_path, "w") as out:
@@ -335,6 +384,7 @@ def run_pipeline() -> None:
     json_report = {
         "pipeline_version": "2.0",
         "agents": ["RetrieverAgent", "DiagnosisAgent", "FixAgent", "TriageAgent"],
+        "roi_analysis": roi_data,
         "diagnoses": [d.__dict__ for d in diagnoses],
         "fixes": [f.__dict__ for f in fixes],
         "triage": [t.__dict__ for t in triage_results]
