@@ -306,7 +306,19 @@ class ActionAgent:
     """Executes conditional business logic to auto-fix or alert."""
 
     def execute(self, triage: TriageResult, fix: FixSuggestion) -> ActionResult:
-        if triage.priority_rank <= 2 and fix.confidence >= 0.85:
+        if triage.priority_rank == 1 and triage.urgency_score >= 0.95:
+            # Self-healing infrastructure scenario (Sev-1 Outage)
+            rollback_cmd = (
+                f"$ vercel rollback --yes\n"
+                f"> Success! Deployment reverted to previous healthy state.\n"
+                f"> Triggered by CoralDebug Agent due to Sev-1 issue: {triage.error_title}"
+            )
+            return ActionResult(
+                error_title=triage.error_title,
+                action_taken="VERCEL_ROLLBACK_INITIATED",
+                payload=rollback_cmd
+            )
+        elif triage.priority_rank <= 2 and fix.confidence >= 0.85:
             # Auto-remediation scenario
             patch_content = (
                 f"diff --git a/project/src/file.py b/project/src/file.py\n"
