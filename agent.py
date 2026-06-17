@@ -446,11 +446,11 @@ def run_pipeline() -> None:
 
     roi_data = CostAnalyzer.calculate_roi(len(diagnoses))
     roi_block = (
-        f"\n" + "=" * 60 +
-        f"\nBUSINESS ROI & ECONOMICS\n" + "=" * 60 + "\n"
-        f"API Cost: ${roi_data['api_cost_usd']}\n"
-        f"Engineering Hours Saved: {roi_data['human_hours_saved']} hours\n"
-        f"Estimated Savings: ${roi_data['net_roi_usd']}\n"
+        "\n" + "=" * 60
+        + "\nBUSINESS ROI & ECONOMICS\n" + "=" * 60 + "\n"
+        + f"API Cost: ${roi_data['api_cost_usd']}\n"
+        + f"Engineering Hours Saved: {roi_data['human_hours_saved']} hours\n"
+        + f"Estimated Savings: ${roi_data['net_roi_usd']}\n"
     )
     print(roi_block)
     report_lines.append(roi_block)

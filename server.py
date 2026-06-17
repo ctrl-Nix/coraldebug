@@ -1,4 +1,3 @@
-import asyncio
 import json
 import pathlib
 from fastapi import FastAPI, BackgroundTasks, Request
@@ -33,7 +32,7 @@ async def sentry_webhook(request: Request, background_tasks: BackgroundTasks):
     event_id = payload.get("id", "unknown")
     project = payload.get("project_name", "unknown")
     
-    print(f"\n--- Sentry Webhook Received ---")
+    print("\n--- Sentry Webhook Received ---")
     print(f"Event ID: {event_id} | Project: {project}")
     
     # Send the heavy lifting to the background
