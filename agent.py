@@ -24,14 +24,6 @@ from groq import Groq
 
 load_dotenv()
 
-GROQ_API_KEY = os.environ.get("GROQ_API_KEY")
-if not GROQ_API_KEY:
-    raise RuntimeError(
-        "GROQ_API_KEY not set. Run: export GROQ_API_KEY='your-key-here' "
-        "(or put it in a .env file — see README)."
-    )
-
-client = Groq(api_key=GROQ_API_KEY)
 MODEL = "llama3-70b-8192"
 
 # Global token tracking for ROI calculation
@@ -138,7 +130,7 @@ class DiagnosisAgent:
         "error_title, root_cause, affected_repo, severity."
     )
 
-    def diagnose(self, telemetry: RawTelemetry) -> list[Diagnosis]:
+    def diagnose(self, telemetry: RawTelemetry, client: Groq) -> list[Diagnosis]:
         raw_data = {
             "sentry": telemetry.sentry,
             "github": telemetry.github,
@@ -201,7 +193,7 @@ class FixAgent:
         "suggested_fix, confidence, reasoning."
     )
 
-    def propose(self, diagnosis: Diagnosis) -> FixSuggestion:
+    def propose(self, diagnosis: Diagnosis, client: Groq) -> FixSuggestion:
         # Check Agentic Memory first
         if diagnosis.error_title in self.memory:
             cached = self.memory[diagnosis.error_title]
@@ -258,7 +250,7 @@ class TriageAgent:
         "action ('fix-now', 'monitor', or 'investigate')."
     )
 
-    def rank(self, diagnoses: list[Diagnosis], fixes: list[FixSuggestion]) -> list[TriageResult]:
+    def rank(self, diagnoses: list[Diagnosis], fixes: list[FixSuggestion], client: Groq) -> list[TriageResult]:
         pairs = [
             {
                 "error": d.error_title,
@@ -387,7 +379,13 @@ class CostAnalyzer:
 # Pipeline orchestration — wires the agents together
 # ---------------------------------------------------------------------------
 
-def run_pipeline() -> None:
+def run_pipeline(api_key: str = None) -> dict:
+    key = api_key or os.environ.get("GROQ_API_KEY")
+    if not key or key == "your_groq_api_key_here":
+        raise ValueError("Valid Groq API Key required to run the pipeline.")
+        
+    client = Groq(api_key=key)
+
     print("CoralDebug Multi-Agent Pipeline starting...")
 
     retriever = RetrieverAgent()
@@ -400,13 +398,13 @@ def run_pipeline() -> None:
     telemetry = retriever.fetch()
 
     print("[DiagnosisAgent] Identifying root causes...")
-    diagnoses = diagnoser.diagnose(telemetry)
+    diagnoses = diagnoser.diagnose(telemetry, client)
 
     print(f"[FixAgent] Proposing fixes for {len(diagnoses)} issue(s)...")
-    fixes = [fixer.propose(d) for d in diagnoses]
+    fixes = [fixer.propose(d, client) for d in diagnoses]
 
     print("[TriageAgent] Ranking issues by urgency...")
-    triage_results = triager.rank(diagnoses, fixes)
+    triage_results = triager.rank(diagnoses, fixes, client)
 
     print("[ActionAgent] Executing business logic based on triage + confidence...")
     # Map fixes by title to easily pair them with triage results
@@ -483,7 +481,11 @@ def run_pipeline() -> None:
         json.dump(json_report, out, indent=2)
 
     print(f"\nReports saved to {report_path.name} and {json_path.name}")
+    return json_report
 
 
 if __name__ == "__main__":
-    run_pipeline()
+    try:
+        run_pipeline()
+    except Exception as e:
+        print(f"Error: {e}")

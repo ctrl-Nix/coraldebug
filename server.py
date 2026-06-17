@@ -1,7 +1,8 @@
 import json
 import pathlib
-from fastapi import FastAPI, BackgroundTasks, Request
+from fastapi import FastAPI, BackgroundTasks, Request, HTTPException
 from fastapi.responses import HTMLResponse, JSONResponse
+from pydantic import BaseModel
 from agent import run_pipeline
 
 app = FastAPI(
@@ -42,6 +43,23 @@ async def sentry_webhook(request: Request, background_tasks: BackgroundTasks):
         "status": "accepted",
         "message": "Webhook received. Triage agents have been deployed in the background."
     }
+
+class DiagnoseRequest(BaseModel):
+    api_key: str
+
+@app.post("/api/diagnose")
+def trigger_diagnosis_with_key(req: DiagnoseRequest):
+    """Trigger the multi-agent pipeline with a user-provided API key."""
+    if not req.api_key:
+        raise HTTPException(status_code=400, detail="Groq API Key is required.")
+        
+    try:
+        report_data = run_pipeline(api_key=req.api_key)
+        return JSONResponse(content=report_data)
+    except ValueError as e:
+        raise HTTPException(status_code=400, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Pipeline error: {str(e)}")
 
 @app.get("/api/report")
 def get_report():

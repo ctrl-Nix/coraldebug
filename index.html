@@ -120,10 +120,13 @@ LIMIT 10</div>
 
   <div class="query-section">
     <h2>🤖 AI Diagnosis <span class="coral-tag">groq llama3</span></h2>
-    <button class="run-btn" onclick="runDiagnosis()">🧠 Diagnose Errors</button>
-    <div class="loading" id="diagLoading"><div class="spinner"></div> Analyzing with Groq AI...</div>
+    <div style="margin-bottom: 16px; display: flex; gap: 12px; align-items: center;">
+      <input type="password" id="groq-key" placeholder="Paste Groq API Key to run live..." style="flex-grow: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid #2d3748; background: #0d1117; color: #e2e8f0; font-size: 14px;">
+      <button class="run-btn" onclick="runDiagnosis()">🧠 Live Diagnose Errors</button>
+    </div>
+    <div class="loading" id="diagLoading"><div class="spinner"></div> Running Multi-Agent Pipeline via Groq API...</div>
     <div class="diagnosis-box" id="diagnosis">
-      Run the query above first, then click Diagnose Errors to get AI-powered root cause analysis.
+      Enter your Groq API Key above and click Live Diagnose to trigger the autonomous agents.
     </div>
   </div>
 
@@ -162,20 +165,33 @@ async function runQuery() {
   }
 }
 
-function runDiagnosis() {
-  if (!window.latestReportData) {
-    alert("Please run the query first to fetch the data!");
+async function runDiagnosis() {
+  const apiKey = document.getElementById('groq-key').value.trim();
+  if (!apiKey) {
+    alert("Please enter a valid Groq API Key to run the live diagnosis.");
     return;
   }
   
   document.getElementById('diagLoading').classList.add('visible');
   document.getElementById('diagnosis').classList.remove('visible');
   
-  setTimeout(() => {
+  try {
+    const res = await fetch('/api/diagnose', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ api_key: apiKey })
+    });
+    
+    if (!res.ok) {
+        const errData = await res.json();
+        throw new Error(errData.detail || "Failed to run diagnosis pipeline.");
+    }
+    
+    const data = await res.json();
+    window.latestReportData = data;
+    
     document.getElementById('diagLoading').classList.remove('visible');
     document.getElementById('diagnosis').classList.add('visible');
-    
-    const data = window.latestReportData;
     
     // Show ROI
     document.getElementById('roi-section').style.display = 'block';
@@ -205,7 +221,11 @@ function runDiagnosis() {
     }
     
     document.getElementById('diagnosis').innerHTML = html;
-  }, 1000);
+  } catch (err) {
+    document.getElementById('diagLoading').classList.remove('visible');
+    document.getElementById('diagnosis').classList.add('visible');
+    document.getElementById('diagnosis').innerHTML = `<div style="color:#fc8181;">❌ ${err.message}</div>`;
+  }
 }
 </script>
 </body>
