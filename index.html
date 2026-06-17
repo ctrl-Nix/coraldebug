@@ -1,4 +1,4 @@
-﻿<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -81,6 +81,24 @@
     </div>
   </div>
 
+  <div class="query-section" id="roi-section" style="display: none; background: #1a365d; border-color: #2b6cb0;">
+    <h2 style="color: #90cdf4;">💼 Business Value (ROI)</h2>
+    <div style="display: flex; gap: 24px; color: #cbd5e0; font-size: 14px;">
+      <div style="background: #0d1117; padding: 12px 20px; border-radius: 8px; border: 1px solid #2d3748;">
+        <span style="color:#718096; font-size: 11px; display:block; margin-bottom: 4px;">API Cost</span>
+        <strong id="roi-cost" style="color:#fc8181; font-size: 18px;">$0.00</strong>
+      </div>
+      <div style="background: #0d1117; padding: 12px 20px; border-radius: 8px; border: 1px solid #2d3748;">
+        <span style="color:#718096; font-size: 11px; display:block; margin-bottom: 4px;">Human Time Saved</span>
+        <strong id="roi-hours" style="color:#68d391; font-size: 18px;">0 hrs</strong>
+      </div>
+      <div style="background: #0d1117; padding: 12px 20px; border-radius: 8px; border: 1px solid #2d3748;">
+        <span style="color:#718096; font-size: 11px; display:block; margin-bottom: 4px;">Net Money Saved</span>
+        <strong id="roi-net" style="color:#68d391; font-size: 18px;">$0.00</strong>
+      </div>
+    </div>
+  </div>
+
   <div class="query-section">
     <h2>🪸 Cross-Source JOIN Query <span class="coral-tag">coral sql</span></h2>
     <div class="sql-box">SELECT
@@ -116,57 +134,78 @@ LIMIT 10</div>
 </div>
 
 <script>
-const mockData = [
-  { error: "Exception: [ImportError] Failed to load module config in app.py", severity: "error", error_status: "unresolved", repo: "coral-debug-agent", lang: "Python", slack_channel: "all-coral-hackathon" },
-  { error: "Exception: [TypeError] Cannot read property id of undefined in auth.js", severity: "error", error_status: "unresolved", repo: "coral-debug-agent", lang: "Python", slack_channel: "all-coral-hackathon" },
-  { error: "Exception: [DatabaseError] Connection timeout after 30s in db/connection.py", severity: "error", error_status: "unresolved", repo: "coral-debug-agent", lang: "Python", slack_channel: "new-channel" },
-  { error: "Exception: [RuntimeError] Payment service unreachable in services/payment.py", severity: "error", error_status: "unresolved", repo: "coral-debug-agent", lang: "Python", slack_channel: "social" },
-];
-
-function runQuery() {
+async function runQuery() {
   document.getElementById('loading').classList.add('visible');
   document.getElementById('results').innerHTML = '';
-  setTimeout(() => {
+  
+  try {
+    const res = await fetch('/api/report');
+    if (!res.ok) throw new Error("No report generated yet. Run the pipeline backend first.");
+    const data = await window.latestReportData = await res.json();
+    
     document.getElementById('loading').classList.remove('visible');
-    let html = '<table class="result-table"><thead><tr><th>Error</th><th>Severity</th><th>Status</th><th>Repo</th><th>Lang</th><th>Slack Channel</th></tr></thead><tbody>';
-    mockData.forEach(row => {
+    
+    let html = '<table class="result-table"><thead><tr><th>Error</th><th>Severity</th><th>Affected Repo</th></tr></thead><tbody>';
+    data.diagnoses.forEach(row => {
       html += `<tr>
-        <td style="max-width:300px;font-size:12px">${row.error}</td>
+        <td style="max-width:300px;font-size:12px">${row.error_title}</td>
         <td><span class="error-badge">${row.severity}</span></td>
-        <td><span class="unresolved-badge">${row.error_status}</span></td>
-        <td>${row.repo}</td>
-        <td>${row.lang}</td>
-        <td>#${row.slack_channel}</td>
+        <td>${row.affected_repo}</td>
       </tr>`;
     });
     html += '</tbody></table>';
     document.getElementById('results').innerHTML = html;
-  }, 2000);
+    
+  } catch (err) {
+    document.getElementById('loading').classList.remove('visible');
+    document.getElementById('results').innerHTML = `<div style="color:#fc8181; padding: 10px;">${err.message}</div>`;
+  }
 }
 
 function runDiagnosis() {
+  if (!window.latestReportData) {
+    alert("Please run the query first to fetch the data!");
+    return;
+  }
+  
   document.getElementById('diagLoading').classList.add('visible');
   document.getElementById('diagnosis').classList.remove('visible');
+  
   setTimeout(() => {
     document.getElementById('diagLoading').classList.remove('visible');
     document.getElementById('diagnosis').classList.add('visible');
-    document.getElementById('diagnosis').innerHTML = `
-      <strong style="color:#68d391">🔍 Root Cause Analysis</strong><br><br>
-      <strong style="color:#fc8181">1. ImportError — config module</strong><br>
-      The app.py cannot load the config module after deployment. Likely a missing environment variable or misconfigured path in production. Check your .env file and ensure CONFIG_PATH is set correctly.<br><br>
-      <strong style="color:#fc8181">2. TypeError — auth.js</strong><br>
-      A null/undefined object is being accessed in the auth flow. The user object is not being validated before accessing .id property. Add null checks before accessing user properties.<br><br>
-      <strong style="color:#fc8181">3. DatabaseError — db/connection.py</strong><br>
-      Connection pool is timing out after 30s. The database is likely overloaded or the connection string is pointing to a wrong host. Slack channel #all-coral-hackathon confirms team is investigating.<br><br>
-      <strong style="color:#fc8181">4. RuntimeError — payment service</strong><br>
-      Payment microservice is unreachable. Likely a network/firewall issue or the service crashed after latest deploy. Check service health and restart if needed.<br><br>
-      <strong style="color:#68d391">✅ Recommended Actions:</strong><br>
-      1. Rollback latest deployment immediately<br>
-      2. Fix null checks in auth.js before re-deploy<br>
-      3. Rotate database connection pool settings<br>
-      4. Restart payment service and add health check endpoint
-    `;
-  }, 3000);
+    
+    const data = window.latestReportData;
+    
+    // Show ROI
+    document.getElementById('roi-section').style.display = 'block';
+    document.getElementById('roi-cost').innerText = '$' + data.roi_analysis.api_cost_usd.toFixed(4);
+    document.getElementById('roi-hours').innerText = data.roi_analysis.human_hours_saved + ' hrs';
+    document.getElementById('roi-net').innerText = '$' + data.roi_analysis.net_roi_usd.toFixed(2);
+    
+    let html = `<strong style="color:#68d391">🧠 Triage & Fixes</strong><br><br>`;
+    
+    // Combine Triage, Diagnosis and Fixes
+    data.triage.forEach(t => {
+       const fix = data.fixes.find(f => f.error_title === t.error_title) || {};
+       const diag = data.diagnoses.find(d => d.error_title === t.error_title) || {};
+       
+       html += `<strong style="color:#fc8181">${t.priority_rank}. [${t.action.toUpperCase()}] ${t.error_title}</strong><br>`;
+       html += `<span style="color:#a0aec0">Root Cause:</span> ${diag.root_cause || 'Unknown'}<br>`;
+       html += `<span style="color:#a0aec0">Suggested Fix:</span> <span style="font-family:monospace; background:#1a1f35; padding:2px 4px; border-radius:3px;">${fix.suggested_fix || 'Investigate'}</span> (Confidence: ${fix.confidence})<br><br>`;
+    });
+    
+    // Actions
+    if (data.actions && data.actions.length > 0) {
+        html += `<strong style="color:#90cdf4">⚡ Autonomous Actions Taken</strong><br><br>`;
+        data.actions.forEach(a => {
+            html += `<span class="coral-tag">${a.action_taken}</span> ${a.error_title}<br>`;
+            html += `<pre style="background:#0d1117; padding:10px; margin-top:5px; border-radius:4px; font-size:12px; overflow-x:auto;">${a.payload}</pre><br>`;
+        });
+    }
+    
+    document.getElementById('diagnosis').innerHTML = html;
+  }, 1000);
 }
 </script>
 </body>

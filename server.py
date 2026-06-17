@@ -1,5 +1,8 @@
 import asyncio
+import json
+import pathlib
 from fastapi import FastAPI, BackgroundTasks, Request
+from fastapi.responses import HTMLResponse, JSONResponse
 from agent import run_pipeline
 
 app = FastAPI(
@@ -40,6 +43,24 @@ async def sentry_webhook(request: Request, background_tasks: BackgroundTasks):
         "status": "accepted",
         "message": "Webhook received. Triage agents have been deployed in the background."
     }
+
+@app.get("/api/report")
+def get_report():
+    """Returns the latest generated report.json"""
+    report_path = pathlib.Path(__file__).parent / "report.json"
+    if report_path.exists():
+        with open(report_path, "r") as f:
+            return JSONResponse(content=json.load(f))
+    return JSONResponse(content={"error": "No report generated yet."}, status_code=404)
+
+@app.get("/", response_class=HTMLResponse)
+def serve_dashboard():
+    """Serves the live dashboard UI."""
+    index_path = pathlib.Path(__file__).parent / "index.html"
+    if index_path.exists():
+        with open(index_path, "r", encoding="utf-8") as f:
+            return f.read()
+    return "Dashboard not found."
 
 @app.get("/health")
 def health_check():
