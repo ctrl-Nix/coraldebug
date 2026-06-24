@@ -144,7 +144,8 @@ async function runQuery() {
   try {
     const res = await fetch('/api/report');
     if (!res.ok) throw new Error("No report generated yet. Run the pipeline backend first.");
-    const data = await window.latestReportData = await res.json();
+    const data = await res.json();
+    window.latestReportData = data;
     
     document.getElementById('loading').classList.remove('visible');
     
