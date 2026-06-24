@@ -1,0 +1,16 @@
+{
+  "name": "swarmreview-cli",
+  "version": "0.1.0",
+  "description": "CLI shell for SwarmReview, a local-first multi-agent code review engine",
+  "bin": {
+    "swarmreview": "./dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "devDependencies": {
+    "typescript": "^5.4.0",
+    "@types/node": "^20.11.0"
+  }
+}

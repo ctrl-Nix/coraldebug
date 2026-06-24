@@ -1,0 +1,25 @@
+diff --git a/auth.py b/auth.py
+index 83f1c2a..9b2e7aa 100644
+--- a/auth.py
++++ b/auth.py
+@@ -10,7 +10,11 @@ def authenticate(username, password):
+     user = db.find_user(username)
+     if not user:
+         return None
+-    if user.password_hash == hash_password(password):
++    # NOTE: switched to raw SQL for a perf test, forgot to parameterize
++    query = f"SELECT * FROM sessions WHERE user_id = {user.id}"
++    db.execute(query)
++
++    if user.password_hash == hash_password(password):
+         return create_session(user)
+     return None
+
+@@ -20,6 +24,12 @@ def get_all_active_sessions():
+     sessions = []
+     for user in db.get_all_users():
+-        sessions.extend(db.get_sessions(user.id))
++        # N+1: one query per user instead of a single join
++        user_sessions = db.get_sessions(user.id)
++        sessions.extend(user_sessions)
+     return sessions
