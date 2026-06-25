@@ -8,10 +8,10 @@ Built for the **Pirates of the Coral-bean Hackathon 2026** by WeMakeDevs × Cora
 
 CoralDebug diagnoses production errors by querying GitHub, Sentry, and Slack **using Coral SQL**, and orchestrates an AI pipeline to find the root cause, suggest a fix, and triage the issues by urgency.
 
-Instead of hopping between 3 dashboards, the agent automatically pulls:
-- **Sentry** -> unresolved errors in production
-- **GitHub** -> affected repositories and languages
-- **Slack** -> what the team is saying about it
+CoralDebug is no longer just a single tool—it is a **multi-agent debugging ecosystem**. 
+The ecosystem consists of two primary modules:
+1. **CoralDebug Core**: Automatically pulls telemetry from Sentry, GitHub, and Slack to diagnose production errors and propose fixes.
+2. **[Swarmreview (v2)](swarmreview/)**: A local-first, multi-agent code review swarm that evaluates fixes using specialized agents (Security, Performance, Architecture, and a Skeptic) to debate and converge on a verdict.
 
 ## Multi-Agent Architecture
 

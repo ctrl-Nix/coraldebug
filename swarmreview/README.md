@@ -5,8 +5,8 @@ opinion on a diff, four specialized agents review it independently — and a
 fifth **skeptic** agent stress-tests their verdicts before a final decision
 is reached.
 
-> Sister project to [CoralDebug](https://github.com/ctrl-Nix/coraldebug) —
-> same lane (AI-assisted dev tooling), one level deeper: multi-agent
+> Part of the **[CoralDebug Ecosystem](../)** —
+> taking the AI-assisted dev tooling one level deeper: multi-agent
 > orchestration instead of a single LLM call, and local inference by default
 > instead of cloud-only.
 
