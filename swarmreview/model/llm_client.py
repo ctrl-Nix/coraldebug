@@ -17,7 +17,9 @@ import urllib.request
 import urllib.error
 from dataclasses import dataclass
 from typing import Optional
+from dotenv import load_dotenv
 
+load_dotenv()
 
 OLLAMA_HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
 OLLAMA_MODEL = os.environ.get("OLLAMA_MODEL", "llama3.1:8b")
