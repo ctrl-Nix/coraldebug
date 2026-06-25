@@ -36,8 +36,9 @@ class LLMResponse:
 
 
 class LLMClient:
-    def __init__(self, prefer_local: bool = True):
+    def __init__(self, prefer_local: bool = True, api_key: Optional[str] = None):
         self.prefer_local = prefer_local
+        self.api_key = api_key or GROQ_API_KEY
 
     # ---- public API -----------------------------------------------------
 
@@ -55,10 +56,10 @@ class LLMClient:
             try:
                 return self._call_ollama(system, prompt)
             except (urllib.error.URLError, ConnectionError, TimeoutError):
-                if GROQ_API_KEY:
+                if self.api_key:
                     return self._call_groq(system, prompt)
                 raise RuntimeError(
-                    "Local Ollama unreachable and no GROQ_API_KEY set for fallback."
+                    "Local Ollama unreachable and no API key set for fallback."
                 )
         else:
             return self._call_groq(system, prompt)
@@ -88,8 +89,8 @@ class LLMClient:
         return LLMResponse(text=text, source="local", model=OLLAMA_MODEL, latency_s=latency)
 
     def _call_groq(self, system: str, prompt: str) -> LLMResponse:
-        if not GROQ_API_KEY:
-            raise RuntimeError("GROQ_API_KEY not set.")
+        if not self.api_key:
+            raise RuntimeError("GROQ API key not set via environment or CLI.")
         payload = {
             "model": GROQ_MODEL,
             "messages": [
@@ -102,7 +103,7 @@ class LLMClient:
             data=json.dumps(payload).encode("utf-8"),
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {GROQ_API_KEY}",
+                "Authorization": f"Bearer {self.api_key}",
             },
             method="POST",
         )

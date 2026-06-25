@@ -29,12 +29,13 @@ exactly the kind of question you should be able to answer out loud:
 import time
 from dataclasses import dataclass
 from concurrent.futures import ThreadPoolExecutor
-from typing import List
+from typing import List, Optional
 from agents.base_agent import AgentVerdict
 from agents.security_agent import SecurityAgent
 from agents.performance_agent import PerformanceAgent
 from agents.architecture_agent import ArchitectureAgent
 from agents.skeptic_agent import SkepticAgent
+from model.llm_client import LLMClient
 
 VERDICT_SEVERITY = {"approve": 0, "request_changes": 1, "block": 2}
 
@@ -51,11 +52,12 @@ class FinalReview:
 
 
 class ReviewOrchestrator:
-    def __init__(self):
-        self.security = SecurityAgent()
-        self.performance = PerformanceAgent()
-        self.architecture = ArchitectureAgent()
-        self.skeptic = SkepticAgent()
+    def __init__(self, api_key: Optional[str] = None):
+        client = LLMClient(api_key=api_key)
+        self.security = SecurityAgent(client=client)
+        self.performance = PerformanceAgent(client=client)
+        self.architecture = ArchitectureAgent(client=client)
+        self.skeptic = SkepticAgent(client=client)
 
     def run(self, diff: str) -> FinalReview:
         t0 = time.time()

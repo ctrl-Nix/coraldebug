@@ -18,6 +18,7 @@ def main():
     parser.add_argument("--diff", help="Path to a .diff/.patch file")
     parser.add_argument("--stdin", action="store_true", help="Read diff from stdin")
     parser.add_argument("--json", action="store_true", help="Output machine-readable JSON")
+    parser.add_argument("--api-key", help="Optional Groq API key (overrides .env)")
     args = parser.parse_args()
 
     if args.stdin:
@@ -29,7 +30,7 @@ def main():
         parser.error("Provide --diff <file> or --stdin")
         return
 
-    orchestrator = ReviewOrchestrator()
+    orchestrator = ReviewOrchestrator(api_key=args.api_key)
     result = orchestrator.run(diff_text)
 
     if args.json:
