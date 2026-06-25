@@ -193,6 +193,16 @@ class FixAgent:
         "suggested_fix, confidence, reasoning."
     )
 
+    def __init__(self):
+        self.memory = {}
+        memory_path = pathlib.Path(__file__).parent / "memory.json"
+        if memory_path.exists():
+            try:
+                with open(memory_path, "r", encoding="utf-8") as f:
+                    self.memory = json.load(f)
+            except Exception as e:
+                print(f"[FixAgent] Failed to load memory.json: {e}")
+
     def propose(self, diagnosis: Diagnosis, client: Groq) -> FixSuggestion:
         # Check Agentic Memory first
         if diagnosis.error_title in self.memory:
