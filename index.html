@@ -44,7 +44,7 @@
 <body>
 
 <div class="header">
-  <div class="logo">🏴‍☠️</div>
+  <div class="logo">CD</div>
   <div>
     <h1>CoralDebug Agent</h1>
     <p>AI-powered debugging across GitHub + Sentry + Slack — powered by Coral SQL</p>
@@ -56,7 +56,7 @@
 
   <div class="sources">
     <div class="source-card">
-      <div class="source-icon">🐙</div>
+      <div class="source-icon">GH</div>
       <div>
         <div class="source-name">GitHub</div>
         <div class="source-status">● Connected</div>
@@ -64,7 +64,7 @@
       </div>
     </div>
     <div class="source-card">
-      <div class="source-icon">🔴</div>
+      <div class="source-icon">S</div>
       <div>
         <div class="source-name">Sentry</div>
         <div class="source-status">● Connected</div>
@@ -72,7 +72,7 @@
       </div>
     </div>
     <div class="source-card">
-      <div class="source-icon">💬</div>
+      <div class="source-icon">SL</div>
       <div>
         <div class="source-name">Slack</div>
         <div class="source-status">● Connected</div>
@@ -82,7 +82,7 @@
   </div>
 
   <div class="query-section" id="roi-section" style="display: none; background: #1a365d; border-color: #2b6cb0;">
-    <h2 style="color: #90cdf4;">💼 Business Value (ROI)</h2>
+    <h2 style="color: #90cdf4;">Business Value (ROI)</h2>
     <div style="display: flex; gap: 24px; color: #cbd5e0; font-size: 14px;">
       <div style="background: #0d1117; padding: 12px 20px; border-radius: 8px; border: 1px solid #2d3748;">
         <span style="color:#718096; font-size: 11px; display:block; margin-bottom: 4px;">API Cost</span>
@@ -100,7 +100,7 @@
   </div>
 
   <div class="query-section">
-    <h2>🪸 Cross-Source JOIN Query <span class="coral-tag">coral sql</span></h2>
+    <h2>Cross-Source JOIN Query <span class="coral-tag">coral sql</span></h2>
     <div class="sql-box">SELECT
   s.title        AS error,
   s.level        AS severity,
@@ -113,16 +113,16 @@ CROSS JOIN github.repositories g
 CROSS JOIN slack.channels c
 WHERE s.status = 'unresolved'
 LIMIT 10</div>
-    <button class="run-btn" onclick="runQuery()">▶ Run Query</button>
+    <button class="run-btn" onclick="runQuery()">Run Query</button>
     <div class="loading" id="loading"><div class="spinner"></div> Querying GitHub + Sentry + Slack via Coral...</div>
     <div class="results" id="results"></div>
   </div>
 
   <div class="query-section">
-    <h2>🤖 AI Diagnosis <span class="coral-tag">groq llama3</span></h2>
+    <h2>AI Diagnosis <span class="coral-tag">groq llama3</span></h2>
     <div style="margin-bottom: 16px; display: flex; gap: 12px; align-items: center;">
       <input type="password" id="groq-key" placeholder="Paste Groq API Key to run live..." style="flex-grow: 1; padding: 10px 14px; border-radius: 8px; border: 1px solid #2d3748; background: #0d1117; color: #e2e8f0; font-size: 14px;">
-      <button class="run-btn" onclick="runDiagnosis()">🧠 Live Diagnose Errors</button>
+      <button class="run-btn" onclick="runDiagnosis()">Live Diagnose Errors</button>
     </div>
     <div class="loading" id="diagLoading"><div class="spinner"></div> Running Multi-Agent Pipeline via Groq API...</div>
     <div class="diagnosis-box" id="diagnosis">
@@ -133,7 +133,7 @@ LIMIT 10</div>
 </div>
 
 <div class="footer">
-  Built with 🪸 Coral + Groq + GitHub + Sentry + Slack &nbsp;·&nbsp; Pirates of the Coral-bean Hackathon 2026
+  Built with Coral + Groq + GitHub + Sentry + Slack &nbsp;·&nbsp; Pirates of the Coral-bean Hackathon 2026
 </div>
 
 <script>
@@ -200,7 +200,7 @@ async function runDiagnosis() {
     document.getElementById('roi-hours').innerText = data.roi_analysis.human_hours_saved + ' hrs';
     document.getElementById('roi-net').innerText = '$' + data.roi_analysis.net_roi_usd.toFixed(2);
     
-    let html = `<strong style="color:#68d391">🧠 Triage & Fixes</strong><br><br>`;
+    let html = `<strong style="color:#68d391">Triage & Fixes</strong><br><br>`;
     
     // Combine Triage, Diagnosis and Fixes
     data.triage.forEach(t => {
@@ -214,7 +214,7 @@ async function runDiagnosis() {
     
     // Actions
     if (data.actions && data.actions.length > 0) {
-        html += `<strong style="color:#90cdf4">⚡ Autonomous Actions Taken</strong><br><br>`;
+        html += `<strong style="color:#90cdf4">Autonomous Actions Taken</strong><br><br>`;
         data.actions.forEach(a => {
             html += `<span class="coral-tag">${a.action_taken}</span> ${a.error_title}<br>`;
             html += `<pre style="background:#0d1117; padding:10px; margin-top:5px; border-radius:4px; font-size:12px; overflow-x:auto;">${a.payload}</pre><br>`;
@@ -225,7 +225,7 @@ async function runDiagnosis() {
   } catch (err) {
     document.getElementById('diagLoading').classList.remove('visible');
     document.getElementById('diagnosis').classList.add('visible');
-    document.getElementById('diagnosis').innerHTML = `<div style="color:#fc8181;">❌ ${err.message}</div>`;
+    document.getElementById('diagnosis').innerHTML = `<div style="color:#fc8181;">Error: ${err.message}</div>`;
   }
 }
 </script>
